@@ -1,0 +1,80 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+
+## Snake Game: Official Rulebook (MCP)
+
+This document outlines the fundamental rules governing gameplay for the Snake Game.
+
+---
+
+### 1. Snake Movement & Collisions
+
+*   **1.1. Movement Mechanism:** Snake movement occurs in discrete steps, synchronized with a fixed time interval (tick).
+*   **1.2. Directional Input Restrictions:**
+    *   Attempting to move the Snake in the exact opposite direction of its current heading is forbidden and immediately results in **Game Over**.
+    *   Inputs corresponding to the Snake's current direction of travel are ignored.
+*   **1.3. Self-Collision:** The Snake cannot move into any part of its own body. Collision with the Snake's body results in **Game Over**.
+*   **1.4. Wall Collision:** The Snake cannot pass through any Wall segment (including Immune Walls). Collision with any Wall results in **Game Over**.
+
+### 2. Items: Growth & Poison
+
+*   **2.1. Item Acquisition:**
+    *   When the Snake's Head occupies a cell containing an Item, the Item is acquired.
+    *   **2.1.1. Growth Item (+):** Acquiring a Growth Item increases the Snake's length by 1. The new segment is added to the tail, extending it in the Snake's current direction.
+    *   **2.1.2. Poison Item (-):** Acquiring a Poison Item decreases the Snake's length by 1. The last segment of the Snake's tail is removed.
+    *   **2.1.3. Game Over Condition:** If the Snake's length falls below 3 after acquiring a Poison Item, the game immediately results in **Game Over**.
+*   **2.2. Item Spawning & Persistence:**
+    *   Items appear at random, unoccupied locations on the map (never on the Snake's body).
+    *   Each Item has a limited lifespan (e.g., 5 seconds). If an Item is not acquired within its lifespan, it disappears and respawns at a new random location.
+    *   A maximum of 3 Items can be present on the map simultaneously.
+
+### 3. Gates (Teleporters)
+
+*   **3.1. Pairing:** Gates always appear in pairs. Entry into one Gate of a pair results in exit from the other.
+*   **3.2. Placement:** Gates do not overlap. They appear on Wall segments at random valid locations.
+*   **3.3. Teleportation:** When the Snake's Head enters one Gate, it instantly teleports to and exits from the corresponding paired Gate.
+*   **3.4. Persistence:** Gates remain active on the map, even during the Snake's teleportation sequence.
+*   **3.5. Concurrency:** Only one pair of Gates can be active on the map at any given time.
+
+### 4. Gate Exit Direction
+
+*   **4.1. Edge Wall Gates:** If a Gate is located on the outer boundary walls of the map, the Snake's exit direction is fixed to be inward towards the map's center.
+    *   **4.1.1. Top Wall Gate:** Exit Down.
+    *   **4.1.2. Bottom Wall Gate:** Exit Up.
+    *   **4.1.3. Left Wall Gate:** Exit Right.
+    *   **4.1.4. Right Wall Gate:** Exit Left.
+*   **4.2. Inner Wall Gates:** If a Gate is located on an internal wall within the map, the Snake's exit direction follows a specific priority:
+    *   **4.2.1. Primary:** The direction matching the Snake's entry direction into the Gate.
+    *   **4.2.2. Secondary:** Clockwise rotation from the entry direction.
+    *   **4.2.3. Tertiary:** Counter-clockwise rotation from the entry direction.
+    *   **4.2.4. Quaternary:** The exact opposite direction of the entry direction.
+
+### 5. Walls & Immune Walls
+
+*   **5.1. Wall:** A standard map block or barrier. These segments have the potential to transform into Gates.
+*   **5.2. Immune Wall:** A special type of wall segment that serves as a permanent barrier and cannot transform into a Gate.
+*   **5.3. Collision:** (See Rule 1.4) Both Wall and Immune Wall types cause Game Over upon Snake Head collision.
+*   **5.4. Gate Triggering:** Gate pairs appear on Wall segments based on specific in-game conditions or events (e.g., time elapsed, Snake length milestones).
+
+### 6. Score Board & Missions
+
+*   **6.1. Score Board Display:** A dedicated area on the screen displays key game metrics:
+    *   **B (Length):** Current Snake Length / Maximum Achieved Snake Length.
+    *   **+ (Growth Items):** Total number of Growth Items acquired.
+    *   **- (Poison Items):** Total number of Poison Items acquired.
+    *   **G (Gates):** Total number of times the Snake has used a Gate.
+*   **6.2. Mission Display:** A separate area displays specific mission objectives:
+    *   Target length (B).
+    *   Target Growth Items (+).
+    *   Target Poison Items (-).
+    *   Target Gate uses (G).
+    *   Each mission objective displays its completion status (e.g., a checkmark).
+*   **6.3. Game Goal:** The primary objective of the game is to successfully complete all listed mission targets for the current stage.
+*   **6.4. Mission Value Generation:** Mission target values can be either pre-defined for each map/stage or generated randomly at the start of each game.
+*   **6.5. Stage Progression:** Upon successful completion of all missions in the current stage, the game automatically advances to the next distinct map/stage. The game consists of a minimum of 4 unique stages, each featuring a different map layout.
+
+---
