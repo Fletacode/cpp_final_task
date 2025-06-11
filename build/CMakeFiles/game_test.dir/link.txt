@@ -1,1 +1,0 @@
-/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/game_test.dir/GameTest.cpp.o -o game_test  libgame.a lib/libgtest_main.a libgame_map.a libsnake.a /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libcurses.tbd /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libform.tbd lib/libgtest.a
