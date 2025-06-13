@@ -89,4 +89,37 @@ TEST_F(SnakeTest, BodyPositionTest) {
     EXPECT_EQ(body[1].y, 10);
     EXPECT_EQ(body[2].x, 8);
     EXPECT_EQ(body[2].y, 10);
+}
+
+// Snake 리셋 테스트
+TEST_F(SnakeTest, ResetTest) {
+    // 뱀을 변경: 성장, 이동, 방향 변경
+    snake->grow();
+    snake->grow();
+    EXPECT_EQ(snake->getLength(), 5);  // 길이 증가
+    
+    snake->setDirection(Direction::UP);
+    snake->move();
+    snake->move();
+    EXPECT_EQ(snake->getDirection(), Direction::UP);
+    EXPECT_EQ(snake->getHeadX(), 10);
+    EXPECT_EQ(snake->getHeadY(), 8);  // 위로 2칸 이동
+    
+    // 새로운 위치로 리셋
+    snake->reset(5, 5);
+    
+    // 리셋 후 상태 확인
+    EXPECT_EQ(snake->getLength(), 3);  // 초기 길이로 복원
+    EXPECT_EQ(snake->getDirection(), Direction::RIGHT);  // 초기 방향으로 복원
+    EXPECT_EQ(snake->getHeadX(), 5);
+    EXPECT_EQ(snake->getHeadY(), 5);
+    
+    // 몸통 위치도 올바르게 설정되었는지 확인
+    auto body = snake->getBody();
+    EXPECT_EQ(body[0].x, 5);  // 머리
+    EXPECT_EQ(body[0].y, 5);
+    EXPECT_EQ(body[1].x, 4);  // 몸통
+    EXPECT_EQ(body[1].y, 5);
+    EXPECT_EQ(body[2].x, 3);  // 꼬리
+    EXPECT_EQ(body[2].y, 5);
 } 

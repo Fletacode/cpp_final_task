@@ -4,7 +4,7 @@
 class GameMapTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        map = new GameMap(21, 21);  // 최소 크기 21x21
+        map = new GameMap(31, 31);  // 맵 크기 31x31
     }
 
     void TearDown() override {
@@ -16,18 +16,18 @@ protected:
 
 // 맵 크기 테스트
 TEST_F(GameMapTest, MapSizeTest) {
-    EXPECT_EQ(map->getWidth(), 21);
-    EXPECT_EQ(map->getHeight(), 21);
+    EXPECT_EQ(map->getWidth(), 31);
+    EXPECT_EQ(map->getHeight(), 31);
 }
 
 // 맵 초기화 테스트
 TEST_F(GameMapTest, MapInitializationTest) {
     // 모든 테두리가 Immune Wall(2)인지 확인
-    for (int i = 0; i < 21; i++) {
+    for (int i = 0; i < 31; i++) {
         EXPECT_EQ(map->getCellValue(i, 0), 2);  // 상단 벽
-        EXPECT_EQ(map->getCellValue(i, 20), 2); // 하단 벽
+        EXPECT_EQ(map->getCellValue(i, 30), 2); // 하단 벽
         EXPECT_EQ(map->getCellValue(0, i), 2);  // 좌측 벽
-        EXPECT_EQ(map->getCellValue(20, i), 2); // 우측 벽
+        EXPECT_EQ(map->getCellValue(30, i), 2); // 우측 벽
     }
 }
 
@@ -52,7 +52,65 @@ TEST_F(GameMapTest, SnakePositionTest) {
 TEST_F(GameMapTest, BoundaryCheckTest) {
     EXPECT_FALSE(map->isValidPosition(-1, 5));
     EXPECT_FALSE(map->isValidPosition(5, -1));
-    EXPECT_FALSE(map->isValidPosition(21, 5));
-    EXPECT_FALSE(map->isValidPosition(5, 21));
+    EXPECT_FALSE(map->isValidPosition(31, 5));
+    EXPECT_FALSE(map->isValidPosition(5, 31));
     EXPECT_TRUE(map->isValidPosition(5, 5));
+}
+
+// 안전한 위치 찾기 테스트
+TEST_F(GameMapTest, FindSafePositionTest) {
+    // 빈 맵에서 안전한 위치 찾기
+    auto safePos = map->findSafePosition();
+    EXPECT_TRUE(safePos.has_value());
+    
+    if (safePos.has_value()) {
+        int x = safePos.value().first;
+        int y = safePos.value().second;
+        
+        // 안전한 위치는 경계에서 적절히 떨어져 있어야 함 (뱀 길이 3 고려)
+        EXPECT_GE(x, 3);
+        EXPECT_LE(x, 29);  // 31 - 1 - 1
+        EXPECT_GE(y, 1);
+        EXPECT_LE(y, 29);  // 31 - 1 - 1
+        
+        // 해당 위치와 오른쪽으로 2칸이 모두 빈 공간이어야 함
+        EXPECT_EQ(map->getCellValue(x, y), 0);      // 머리 위치
+        EXPECT_EQ(map->getCellValue(x-1, y), 0);    // 몸통 위치
+        EXPECT_EQ(map->getCellValue(x-2, y), 0);    // 꼬리 위치
+    }
+}
+
+// 벽이 있는 맵에서 안전한 위치 찾기 테스트
+TEST_F(GameMapTest, FindSafePositionWithWallsTest) {
+    // 맵 중앙에 벽 설치
+    for (int i = 8; i <= 12; i++) {
+        map->setWall(i, 10);
+        map->setWall(10, i);
+    }
+    
+    auto safePos = map->findSafePosition();
+    EXPECT_TRUE(safePos.has_value());
+    
+    if (safePos.has_value()) {
+        int x = safePos.value().first;
+        int y = safePos.value().second;
+        
+        // 안전한 위치 조건 확인
+        EXPECT_EQ(map->getCellValue(x, y), 0);      // 머리 위치
+        EXPECT_EQ(map->getCellValue(x-1, y), 0);    // 몸통 위치
+        EXPECT_EQ(map->getCellValue(x-2, y), 0);    // 꼬리 위치
+    }
+}
+
+// 안전한 위치가 없는 경우 테스트
+TEST_F(GameMapTest, NoSafePositionTest) {
+    // 맵을 거의 모든 곳에 벽으로 채움 (안전한 위치가 없도록)
+    for (int x = 1; x < 30; x++) {
+        for (int y = 1; y < 30; y++) {
+            map->setWall(x, y);
+        }
+    }
+    
+    auto safePos = map->findSafePosition();
+    EXPECT_FALSE(safePos.has_value());
 } 

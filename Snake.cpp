@@ -80,4 +80,42 @@ bool Snake::isOppositeDirection(Direction newDir) const {
             return newDir == Direction::LEFT;
     }
     return false;
+}
+
+// 아이템 효과 적용 메서드들
+void Snake::applyGrowthItem() {
+    grow();  // 기존 grow 메서드 사용
+}
+
+bool Snake::applyPoisonItem() {
+    if (body.size() <= getMinLength()) {
+        return false;  // 최소 길이 이하로 줄어들 수 없음
+    }
+    
+    // 꼬리 제거 (길이 감소)
+    if (!body.empty()) {
+        body.pop_back();
+    }
+    
+    return true;  // 성공적으로 길이 감소
+}
+
+void Snake::teleportTo(const Position& newPosition) {
+    if (!body.empty()) {
+        body[0] = newPosition;  // 머리 위치를 새 위치로 이동
+    }
+}
+
+void Snake::reset(int startX, int startY) {
+    // 몸통 초기화
+    body.clear();
+    
+    // 초기 길이 3으로 설정
+    body.push_back(Position(startX, startY));       // 머리
+    body.push_back(Position(startX - 1, startY));   // 몸통
+    body.push_back(Position(startX - 2, startY));   // 꼬리
+    
+    // 초기 방향과 상태 설정
+    direction = Direction::RIGHT;
+    shouldGrow = false;
 } 

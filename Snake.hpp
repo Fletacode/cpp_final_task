@@ -16,6 +16,13 @@ struct Position {
     bool operator==(const Position& other) const {
         return x == other.x && y == other.y;
     }
+    bool operator!=(const Position& other) const {
+        return !(*this == other);
+    }
+    bool operator<(const Position& other) const {
+        if (x != other.x) return x < other.x;
+        return y < other.y;
+    }
 };
 
 class Snake {
@@ -36,9 +43,21 @@ public:
     // 크기 관련
     int getLength() const { return body.size(); }
     void grow();
+    
+    // 아이템 효과 적용
+    void applyGrowthItem();
+    bool applyPoisonItem();  // 길이가 최소값 미만이 되면 false 반환
+    int getMinLength() const { return 3; }
+    Position getHead() const { return body[0]; }
 
     // 충돌 감지
     bool checkSelfCollision() const;
+    
+    // Gate 이동
+    void teleportTo(const Position& newPosition);
+    
+    // 리셋
+    void reset(int startX, int startY);
 
 private:
     std::vector<Position> body;

@@ -1,5 +1,7 @@
 #include "GameMap.hpp"
+#include "ColorManager.hpp"
 #include <ncurses.h>
+#include <memory>
 
 int main() {
     // ncurses 초기화
@@ -9,8 +11,13 @@ int main() {
     keypad(stdscr, TRUE);
     curs_set(0);  // 커서 숨기기
 
+    // ColorManager 생성 및 초기화
+    auto colorManager = std::make_shared<ColorManager>();
+    colorManager->initializeColors();
+
     // 맵 생성
     GameMap map(21, 21);
+    map.setColorManager(colorManager);
 
     // 테스트용 벽 추가
     map.setWall(5, 5);
