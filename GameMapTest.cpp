@@ -113,4 +113,22 @@ TEST_F(GameMapTest, NoSafePositionTest) {
     
     auto safePos = map->findSafePosition();
     EXPECT_FALSE(safePos.has_value());
+}
+
+// SPEED 아이템 표시 테스트
+TEST_F(GameMapTest, SpeedItemDisplayTest) {
+    // SPEED 아이템은 맵 값 8로 설정되어야 함
+    map->setCellValue(10, 10, 8);
+    EXPECT_EQ(map->getCellValue(10, 10), 8);
+    
+    // 다른 아이템들과 구분되는지 확인
+    map->setCellValue(5, 5, 5);   // Growth Item
+    map->setCellValue(6, 6, 6);   // Poison Item
+    map->setCellValue(7, 7, 7);   // Gate
+    map->setCellValue(8, 8, 8);   // Speed Item
+    
+    EXPECT_EQ(map->getCellValue(5, 5), 5);
+    EXPECT_EQ(map->getCellValue(6, 6), 6);
+    EXPECT_EQ(map->getCellValue(7, 7), 7);
+    EXPECT_EQ(map->getCellValue(8, 8), 8);
 } 

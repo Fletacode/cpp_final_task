@@ -39,6 +39,7 @@ void ColorManager::setupColorPairs() {
     init_pair(GROWTH_ITEM_PAIR, COLOR_YELLOW, COLOR_BLACK); // 성장 아이템: 노란색
     init_pair(POISON_ITEM_PAIR, COLOR_MAGENTA, COLOR_BLACK); // 독 아이템: 자홍색
     init_pair(GATE_PAIR, COLOR_BLUE, COLOR_BLACK);          // 게이트: 파란색
+    init_pair(SPEED_ITEM_PAIR, COLOR_WHITE, COLOR_BLACK);   // 속도 아이템: 흰색
 }
 
 // 색상 적용
@@ -67,6 +68,7 @@ void ColorManager::resetColor() {
     attroff(COLOR_PAIR(GROWTH_ITEM_PAIR));
     attroff(COLOR_PAIR(POISON_ITEM_PAIR));
     attroff(COLOR_PAIR(GATE_PAIR));
+    attroff(COLOR_PAIR(SPEED_ITEM_PAIR));
 }
 
 // 색상 지원 여부 확인
@@ -93,6 +95,8 @@ int ColorManager::getColorPair(ColorType colorType) const {
             return POISON_ITEM_PAIR;
         case ColorType::GATE:
             return GATE_PAIR;
+        case ColorType::SPEED_ITEM:
+            return SPEED_ITEM_PAIR;
         default:
             return 0;
     }

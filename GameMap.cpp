@@ -107,6 +107,9 @@ void GameMap::draw() const {
                     case 7:  // Gate
                         colorManager->applyColor(ColorType::GATE);
                         break;
+                    case 8:  // Speed Item
+                        colorManager->applyColor(ColorType::SPEED_ITEM);
+                        break;
                     default:
                         colorManager->applyColor(ColorType::DEFAULT);
                         break;
@@ -138,6 +141,9 @@ void GameMap::draw() const {
                     break;
                 case 7:  // Gate
                     addch('G');
+                    break;
+                case 8:  // Speed Item
+                    addch('*');
                     break;
                 default:
                     addch('?');

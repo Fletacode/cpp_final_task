@@ -12,7 +12,8 @@ enum class ColorType {
     SNAKE_BODY,   // 뱀 몸통 (o)
     GROWTH_ITEM,  // 성장 아이템 (+)
     POISON_ITEM,  // 독 아이템 (-)
-    GATE          // 게이트 (G)
+    GATE,         // 게이트 (G)
+    SPEED_ITEM    // 속도 아이템 (*)
 };
 
 // 색상 관리 클래스
@@ -28,6 +29,7 @@ private:
     static const int GROWTH_ITEM_PAIR = 5;
     static const int POISON_ITEM_PAIR = 6;
     static const int GATE_PAIR = 7;
+    static const int SPEED_ITEM_PAIR = 8;
 
 public:
     // 생성자

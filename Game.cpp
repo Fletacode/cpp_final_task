@@ -3,8 +3,13 @@
 #include <thread>
 #include "Stage.hpp"
 
+// static 멤버 변수 정의
+const int Game::baseTickDuration;
+const int Game::minTickDuration;
+
 Game::Game(int width, int height) 
-    : map(width, height), snake(width/2, height/2), itemManager(map), gateManager(map), gameOver(false), gameCompleted(false) {
+    : map(width, height), snake(width/2, height/2), itemManager(map), gateManager(map), 
+      gameOver(false), gameCompleted(false), currentTickDuration(baseTickDuration), speedBoostCount(0) {
     // ColorManager 초기화
     colorManager = std::make_shared<ColorManager>();
     map.setColorManager(colorManager);
@@ -98,7 +103,6 @@ void Game::run() {
     updateMap();
     
     auto lastUpdate = std::chrono::steady_clock::now();
-    const auto tickDuration = std::chrono::milliseconds(200 - (stageManager.getCurrentStage()->getStageNumber() * 75));  // 200ms마다 업데이트
     
     while (!gameOver) {
         auto now = std::chrono::steady_clock::now();
@@ -109,7 +113,8 @@ void Game::run() {
             handleInput(key);
         }
         
-        // 일정 시간마다 게임 업데이트
+        // 일정 시간마다 게임 업데이트 (동적 속도 사용)
+        auto tickDuration = std::chrono::milliseconds(currentTickDuration);
         if (now - lastUpdate >= tickDuration) {
             update();
             draw();
@@ -205,6 +210,11 @@ void Game::handleItemCollision() {
                 } else {
                     scoreManager.incrementPoisonItems();
                 }
+                break;
+            case ItemType::SPEED:
+                // 속도 부스트 적용
+                applySpeedBoost();
+                // TODO: ScoreManager에 SPEED 아이템 카운터 추가 시 여기서 증가
                 break;
         }
     }
@@ -327,4 +337,21 @@ void Game::drawMissionInfo() {
         currentStage->getOverallProgress() * 100.0f);
     
     refresh();
+}
+
+// 속도 관리 메서드들
+void Game::applySpeedBoost() {
+    speedBoostCount++;
+    
+    // 새로운 속도 계산: baseTickDuration / (1 + speedBoostCount * 0.2)
+    double speedMultiplier = 1.0 + speedBoostCount * 0.2;
+    int newTickDuration = static_cast<int>(baseTickDuration / speedMultiplier);
+    
+    // 최소 속도 제한 적용
+    currentTickDuration = std::max(newTickDuration, minTickDuration);
+}
+
+void Game::resetSpeed() {
+    currentTickDuration = baseTickDuration;
+    speedBoostCount = 0;
 } 

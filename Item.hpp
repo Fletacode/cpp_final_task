@@ -9,7 +9,8 @@ struct Position;  // 전방 선언
 // 아이템 타입 열거형
 enum class ItemType {
     GROWTH,  // 성장 아이템 (+)
-    POISON   // 독 아이템 (-)
+    POISON,  // 독 아이템 (-)
+    SPEED    // 속도 아이템 (*)
 };
 
 // 아이템 클래스

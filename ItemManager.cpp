@@ -44,11 +44,11 @@ void ItemManager::removeExpiredItems() {
 
 // 맵에 아이템 위치 업데이트
 void ItemManager::updateMap() {
-    // 먼저 기존 아이템 위치를 맵에서 제거 (값 5, 6을 0으로)
+    // 먼저 기존 아이템 위치를 맵에서 제거 (값 5, 6, 8을 0으로)
     for (int y = 0; y < gameMap.getHeight(); ++y) {
         for (int x = 0; x < gameMap.getWidth(); ++x) {
             int cellValue = gameMap.getCell(x, y);
-            if (cellValue == 5 || cellValue == 6) {  // Growth Item 또는 Poison Item
+            if (cellValue == 5 || cellValue == 6 || cellValue == 8) {  // Growth, Poison, Speed Item
                 gameMap.setCell(x, y, 0);  // 빈 공간으로 설정
             }
         }
@@ -56,7 +56,21 @@ void ItemManager::updateMap() {
     
     // 현재 아이템들을 맵에 표시
     for (const auto& item : items) {
-        int value = (item.getType() == ItemType::GROWTH) ? 5 : 6;
+        int value;
+        switch (item.getType()) {
+            case ItemType::GROWTH:
+                value = 5;
+                break;
+            case ItemType::POISON:
+                value = 6;
+                break;
+            case ItemType::SPEED:
+                value = 8;
+                break;
+            default:
+                value = 0;
+                break;
+        }
         gameMap.setCell(item.getX(), item.getY(), value);
     }
 }
@@ -136,6 +150,16 @@ const std::vector<Item>& ItemManager::getItems() const {
 
 // 랜덤 타입 생성
 ItemType ItemManager::getRandomItemType() {
-    std::uniform_int_distribution<int> typeDist(0, 1);
-    return (typeDist(gen) == 0) ? ItemType::GROWTH : ItemType::POISON;
+    std::uniform_int_distribution<int> typeDist(0, 2);  // 0: GROWTH, 1: POISON, 2: SPEED
+    int randomValue = typeDist(gen);
+    switch (randomValue) {
+        case 0:
+            return ItemType::GROWTH;
+        case 1:
+            return ItemType::POISON;
+        case 2:
+            return ItemType::SPEED;
+        default:
+            return ItemType::GROWTH;  // 기본값
+    }
 } 

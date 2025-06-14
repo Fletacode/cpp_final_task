@@ -24,10 +24,19 @@ public:
     const Snake& getSnake() const { return snake; }
     GameMap& getMap() { return map; }
     ScoreManager& getScoreManager() { return scoreManager; }
+    ItemManager& getItemManager() { return itemManager; }
+    const ItemManager& getItemManager() const { return itemManager; }
     GateManager& getGateManager() { return gateManager; }
     const GateManager& getGateManager() const { return gateManager; }
     StageManager& getStageManager() { return stageManager; }
     const StageManager& getStageManager() const { return stageManager; }
+
+    // 속도 관리
+    int getCurrentTickDuration() const { return currentTickDuration; }
+    int getBaseTickDuration() const { return baseTickDuration; }
+    int getSpeedBoostCount() const { return speedBoostCount; }
+    void applySpeedBoost();
+    void resetSpeed();
 
     // 게임 로직
     void update();
@@ -47,6 +56,12 @@ private:
     StageManager stageManager;
     bool gameOver;
     bool gameCompleted;
+
+    // 속도 관리
+    static const int baseTickDuration = 200;  // 기본 틱 지속시간 (ms)
+    static const int minTickDuration = 50;    // 최소 틱 지속시간 (ms)
+    int currentTickDuration;                  // 현재 틱 지속시간 (ms)
+    int speedBoostCount;                      // 속도 부스트 횟수
 
     // 충돌 감지
     bool checkWallCollision() const;

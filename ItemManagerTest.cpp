@@ -66,16 +66,19 @@ TEST_F(ItemManagerTest, ItemExpirationTest) {
 
 // 아이템 충돌 감지 테스트
 TEST_F(ItemManagerTest, ItemCollisionTest) {
-    // Snake 머리 위치에 아이템 생성
-    Position headPos = snake->getHead();
-    itemManager->addItem(headPos.x, headPos.y, ItemType::GROWTH);
-    
+    // 아이템 생성
+    itemManager->addItem(10, 10, ItemType::GROWTH);
     EXPECT_EQ(itemManager->getItemCount(), 1);
     
-    // 충돌 감지 및 아이템 제거
+    // Snake를 아이템 위치로 이동
+    snake->teleportTo(Position(10, 10));
+    
+    // 충돌 감지
     auto collectedItem = itemManager->checkCollision(*snake);
     EXPECT_TRUE(collectedItem.has_value());
     EXPECT_EQ(collectedItem->getType(), ItemType::GROWTH);
+    
+    // 아이템이 제거되었는지 확인
     EXPECT_EQ(itemManager->getItemCount(), 0);
 }
 
@@ -117,4 +120,60 @@ TEST_F(ItemManagerTest, FindEmptySpaceTest) {
     if (emptyPos.has_value()) {
         EXPECT_EQ(gameMap->getCell(emptyPos->x, emptyPos->y), 0);
     }
+}
+
+// SPEED 아이템 생성 테스트
+TEST_F(ItemManagerTest, SpeedItemGenerationTest) {
+    // SPEED 아이템 직접 추가
+    itemManager->addItem(5, 5, ItemType::SPEED);
+    EXPECT_EQ(itemManager->getItemCount(), 1);
+    
+    const auto& items = itemManager->getItems();
+    EXPECT_EQ(items[0].getType(), ItemType::SPEED);
+    EXPECT_EQ(items[0].getX(), 5);
+    EXPECT_EQ(items[0].getY(), 5);
+}
+
+// SPEED 아이템 맵 업데이트 테스트
+TEST_F(ItemManagerTest, SpeedItemMapUpdateTest) {
+    // SPEED 아이템 추가
+    itemManager->addItem(10, 10, ItemType::SPEED);
+    
+    // 맵 업데이트
+    itemManager->updateMap();
+    
+    // 맵에서 SPEED 아이템이 값 8로 표시되는지 확인
+    EXPECT_EQ(gameMap->getCellValue(10, 10), 8);
+}
+
+// SPEED 아이템 충돌 감지 테스트
+TEST_F(ItemManagerTest, SpeedItemCollisionTest) {
+    // SPEED 아이템 생성
+    itemManager->addItem(15, 15, ItemType::SPEED);
+    EXPECT_EQ(itemManager->getItemCount(), 1);
+    
+    // Snake를 SPEED 아이템 위치로 이동
+    snake->teleportTo(Position(15, 15));
+    
+    // 충돌 감지
+    auto collectedItem = itemManager->checkCollision(*snake);
+    EXPECT_TRUE(collectedItem.has_value());
+    EXPECT_EQ(collectedItem->getType(), ItemType::SPEED);
+    
+    // 아이템이 제거되었는지 확인
+    EXPECT_EQ(itemManager->getItemCount(), 0);
+}
+
+// 랜덤 아이템 타입에 SPEED 포함 테스트
+TEST_F(ItemManagerTest, RandomItemTypeIncludesSpeedTest) {
+    // 여러 번 랜덤 타입을 생성하여 SPEED가 포함되는지 확인
+    bool speedFound = false;
+    for (int i = 0; i < 100; ++i) {
+        ItemType type = itemManager->getRandomItemType();
+        if (type == ItemType::SPEED) {
+            speedFound = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(speedFound);
 } 

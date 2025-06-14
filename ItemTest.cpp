@@ -70,4 +70,41 @@ TEST_F(ItemTest, ItemTypeTest) {
     EXPECT_TRUE(poisonItem.getType() == ItemType::POISON);
     EXPECT_FALSE(growthItem.getType() == ItemType::POISON);
     EXPECT_FALSE(poisonItem.getType() == ItemType::GROWTH);
+}
+
+// SPEED 아이템 타입이 존재하는지 테스트
+TEST_F(ItemTest, SpeedItemTypeExists) {
+    // SPEED 타입으로 아이템 생성 가능한지 확인
+    Item speedItem(5, 5, ItemType::SPEED);
+    EXPECT_EQ(speedItem.getType(), ItemType::SPEED);
+    EXPECT_EQ(speedItem.getX(), 5);
+    EXPECT_EQ(speedItem.getY(), 5);
+}
+
+// SPEED 아이템의 기본 속성 테스트
+TEST_F(ItemTest, SpeedItemBasicProperties) {
+    Item speedItem(10, 15, ItemType::SPEED);
+    
+    // 위치 확인
+    EXPECT_EQ(speedItem.getX(), 10);
+    EXPECT_EQ(speedItem.getY(), 15);
+    
+    // 타입 확인
+    EXPECT_EQ(speedItem.getType(), ItemType::SPEED);
+    
+    // 만료되지 않았는지 확인 (기본 5초 지속시간)
+    EXPECT_FALSE(speedItem.isExpired());
+}
+
+// SPEED 아이템의 만료 시간 테스트
+TEST_F(ItemTest, SpeedItemExpiration) {
+    // 매우 짧은 지속시간으로 SPEED 아이템 생성
+    Item speedItem(1, 1, ItemType::SPEED, std::chrono::milliseconds(1));
+    
+    // 초기에는 만료되지 않음
+    EXPECT_FALSE(speedItem.isExpired());
+    
+    // 잠시 대기 후 만료 확인
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    EXPECT_TRUE(speedItem.isExpired());
 } 

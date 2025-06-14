@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "Game.hpp"
+#include <iostream>
 
 class GameTest : public ::testing::Test {
 protected:
@@ -215,4 +216,172 @@ TEST_F(GameTest, SnakeResetOnStageTransitionTest) {
     EXPECT_LT(newPos.x, game->getMap().getWidth() - 1);
     EXPECT_GE(newPos.y, 1);  // 최소 y 좌표
     EXPECT_LT(newPos.y, game->getMap().getHeight() - 1);
+}
+
+// 게임 속도 관리 테스트
+TEST_F(GameTest, GameSpeedManagementTest) {
+    // 초기 속도 확인 (200ms)
+    EXPECT_EQ(game->getCurrentTickDuration(), 200);
+    
+    // 기본 속도 확인
+    EXPECT_EQ(game->getBaseTickDuration(), 200);
+    
+    // 속도 부스트 카운터 초기값 확인
+    EXPECT_EQ(game->getSpeedBoostCount(), 0);
+}
+
+// SPEED 아이템 습득 시 속도 증가 테스트
+TEST_F(GameTest, SpeedItemBoostTest) {
+    // 초기 속도 확인
+    EXPECT_EQ(game->getCurrentTickDuration(), 200);
+    EXPECT_EQ(game->getSpeedBoostCount(), 0);
+    
+    // SPEED 아이템 1개 습득 시뮬레이션
+    game->applySpeedBoost();
+    
+    // 속도가 증가했는지 확인 (200ms / 1.2 = 166ms)
+    EXPECT_EQ(game->getCurrentTickDuration(), 166);
+    EXPECT_EQ(game->getSpeedBoostCount(), 1);
+    
+    // SPEED 아이템 2개 습득 시뮬레이션
+    game->applySpeedBoost();
+    
+    // 속도가 더 증가했는지 확인 (200ms / 1.4 = 142ms)
+    EXPECT_EQ(game->getCurrentTickDuration(), 142);
+    EXPECT_EQ(game->getSpeedBoostCount(), 2);
+}
+
+// 최대 속도 제한 테스트
+TEST_F(GameTest, MaxSpeedLimitTest) {
+    // 여러 번 속도 부스트 적용
+    for (int i = 0; i < 10; ++i) {
+        game->applySpeedBoost();
+    }
+    
+    // 최소 틱 지속시간 50ms 이하로 내려가지 않는지 확인
+    EXPECT_GE(game->getCurrentTickDuration(), 50);
+}
+
+// 스테이지 전환 시 속도 초기화 테스트
+TEST_F(GameTest, SpeedResetOnStageTransitionTest) {
+    // 속도 부스트 적용
+    game->applySpeedBoost();
+    game->applySpeedBoost();
+    EXPECT_EQ(game->getCurrentTickDuration(), 142);
+    EXPECT_EQ(game->getSpeedBoostCount(), 2);
+    
+    // 스테이지 전환 시뮬레이션
+    game->resetSpeed();
+    
+    // 속도가 초기화되었는지 확인
+    EXPECT_EQ(game->getCurrentTickDuration(), 200);
+    EXPECT_EQ(game->getSpeedBoostCount(), 0);
+}
+
+// SPEED 아이템 습득 통합 테스트
+TEST_F(GameTest, SpeedItemCollectionIntegrationTest) {
+    // 초기 속도 확인
+    EXPECT_EQ(game->getCurrentTickDuration(), 200);
+    EXPECT_EQ(game->getSpeedBoostCount(), 0);
+    
+    // 뱀의 현재 위치와 방향 확인
+    Position headPos = game->getSnake().getHead();
+    Direction direction = game->getSnake().getDirection();
+    std::cout << "Snake head position: (" << headPos.x << ", " << headPos.y << ")" << std::endl;
+    std::cout << "Snake direction: " << static_cast<int>(direction) << std::endl;
+    
+    // 뱀이 이동할 다음 위치에 SPEED 아이템 배치
+    Position nextPos = headPos;
+    switch (direction) {
+        case Direction::RIGHT:
+            nextPos.x += 1;
+            break;
+        case Direction::LEFT:
+            nextPos.x -= 1;
+            break;
+        case Direction::UP:
+            nextPos.y -= 1;
+            break;
+        case Direction::DOWN:
+            nextPos.y += 1;
+            break;
+    }
+    
+    std::cout << "Placing item at next position: (" << nextPos.x << ", " << nextPos.y << ")" << std::endl;
+    
+    game->getItemManager().addItem(nextPos.x, nextPos.y, ItemType::SPEED);
+    std::cout << "Item count after adding: " << game->getItemManager().getItemCount() << std::endl;
+    
+    // 맵 업데이트 (아이템이 맵에 반영되도록)
+    game->getItemManager().updateMap();
+    
+    // 게임 업데이트 (뱀 이동 및 아이템 충돌 처리)
+    game->update();
+    
+    std::cout << "Item count after update: " << game->getItemManager().getItemCount() << std::endl;
+    std::cout << "Speed boost count: " << game->getSpeedBoostCount() << std::endl;
+    std::cout << "Current tick duration: " << game->getCurrentTickDuration() << std::endl;
+    
+    // 속도가 증가했는지 확인
+    EXPECT_EQ(game->getCurrentTickDuration(), 166);  // 200ms / 1.2 = 166ms
+    EXPECT_EQ(game->getSpeedBoostCount(), 1);
+    
+    // 아이템이 제거되었는지 확인 (새로 생성된 아이템 제외하고)
+    EXPECT_LE(game->getItemManager().getItemCount(), 3);  // 최대 3개까지 가능
+}
+
+// 여러 SPEED 아이템 연속 습득 테스트
+TEST_F(GameTest, MultipleSpeedItemsTest) {
+    // 초기 상태 확인
+    EXPECT_EQ(game->getCurrentTickDuration(), 200);
+    
+    // 첫 번째 SPEED 아이템 습득
+    Position headPos = game->getSnake().getHead();
+    Direction direction = game->getSnake().getDirection();
+    
+    // 뱀이 이동할 다음 위치에 아이템 배치
+    Position nextPos = headPos;
+    switch (direction) {
+        case Direction::RIGHT: nextPos.x += 1; break;
+        case Direction::LEFT: nextPos.x -= 1; break;
+        case Direction::UP: nextPos.y -= 1; break;
+        case Direction::DOWN: nextPos.y += 1; break;
+    }
+    
+    game->getItemManager().addItem(nextPos.x, nextPos.y, ItemType::SPEED);
+    game->getItemManager().updateMap();
+    game->update();
+    EXPECT_EQ(game->getCurrentTickDuration(), 166);
+    
+    // 두 번째 SPEED 아이템 습득
+    headPos = game->getSnake().getHead();
+    direction = game->getSnake().getDirection();
+    nextPos = headPos;
+    switch (direction) {
+        case Direction::RIGHT: nextPos.x += 1; break;
+        case Direction::LEFT: nextPos.x -= 1; break;
+        case Direction::UP: nextPos.y -= 1; break;
+        case Direction::DOWN: nextPos.y += 1; break;
+    }
+    
+    game->getItemManager().addItem(nextPos.x, nextPos.y, ItemType::SPEED);
+    game->getItemManager().updateMap();
+    game->update();
+    EXPECT_EQ(game->getCurrentTickDuration(), 142);  // 200ms / 1.4 = 142ms
+    
+    // 세 번째 SPEED 아이템 습득
+    headPos = game->getSnake().getHead();
+    direction = game->getSnake().getDirection();
+    nextPos = headPos;
+    switch (direction) {
+        case Direction::RIGHT: nextPos.x += 1; break;
+        case Direction::LEFT: nextPos.x -= 1; break;
+        case Direction::UP: nextPos.y -= 1; break;
+        case Direction::DOWN: nextPos.y += 1; break;
+    }
+    
+    game->getItemManager().addItem(nextPos.x, nextPos.y, ItemType::SPEED);
+    game->getItemManager().updateMap();
+    game->update();
+    EXPECT_EQ(game->getCurrentTickDuration(), 125);  // 200ms / 1.6 = 125ms
 } 
