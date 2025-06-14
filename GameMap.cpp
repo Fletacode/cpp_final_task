@@ -51,6 +51,10 @@ void GameMap::setGate(int x, int y) {
     setCellValue(x, y, 7);
 }
 
+void GameMap::setTemporaryWall(int x, int y) {
+    setCellValue(x, y, 9);
+}
+
 bool GameMap::isValidPosition(int x, int y) const {
     return x >= 0 && x < width && y >= 0 && y < height;
 }
@@ -110,6 +114,9 @@ void GameMap::draw() const {
                     case 8:  // Speed Item
                         colorManager->applyColor(ColorType::SPEED_ITEM);
                         break;
+                    case 9:  // Temporary Wall
+                        colorManager->applyColor(ColorType::WALL);  // 일반 벽과 같은 색상 사용
+                        break;
                     default:
                         colorManager->applyColor(ColorType::DEFAULT);
                         break;
@@ -144,6 +151,9 @@ void GameMap::draw() const {
                     break;
                 case 8:  // Speed Item
                     addch('*');
+                    break;
+                case 9:  // Temporary Wall
+                    addch('T');
                     break;
                 default:
                     addch('?');

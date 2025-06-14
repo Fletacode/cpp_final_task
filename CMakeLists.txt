@@ -27,6 +27,12 @@ add_library(item Item.cpp)
 add_library(gate Gate.cpp)
 target_link_libraries(gate snake)
 
+add_library(temporary_wall TemporaryWall.cpp)
+target_link_libraries(temporary_wall snake)
+
+add_library(temporary_wall_manager TemporaryWallManager.cpp)
+target_link_libraries(temporary_wall_manager temporary_wall game_map)
+
 add_library(gate_manager GateManager.cpp)
 target_link_libraries(gate_manager gate game_map snake)
 
@@ -50,7 +56,7 @@ add_library(stage_manager StageManager.cpp)
 target_link_libraries(stage_manager stage)
 
 add_library(game Game.cpp)
-target_link_libraries(game game_map snake item_manager gate_manager color_manager score_manager stage_manager ${CURSES_LIBRARIES})
+target_link_libraries(game game_map snake item_manager gate_manager temporary_wall_manager color_manager score_manager stage_manager ${CURSES_LIBRARIES})
 
 # 테스트 실행 파일 생성
 add_executable(game_map_test GameMapTest.cpp)
@@ -92,6 +98,18 @@ target_link_libraries(color_manager_test
 add_executable(gate_test GateTest.cpp)
 target_link_libraries(gate_test
     gate
+    GTest::gtest_main
+)
+
+add_executable(temporary_wall_test TemporaryWallTest.cpp)
+target_link_libraries(temporary_wall_test
+    temporary_wall
+    GTest::gtest_main
+)
+
+add_executable(temporary_wall_manager_test TemporaryWallManagerTest.cpp)
+target_link_libraries(temporary_wall_manager_test
+    temporary_wall_manager
     GTest::gtest_main
 )
 

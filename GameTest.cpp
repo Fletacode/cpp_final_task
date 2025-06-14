@@ -384,4 +384,174 @@ TEST_F(GameTest, MultipleSpeedItemsTest) {
     game->getItemManager().updateMap();
     game->update();
     EXPECT_EQ(game->getCurrentTickDuration(), 125);  // 200ms / 1.6 = 125ms
+}
+
+// TemporaryWallManager 통합 테스트
+TEST_F(GameTest, TemporaryWallManagerIntegrationTest) {
+    // Game 클래스에 TemporaryWallManager가 통합되어 있는지 확인
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    
+    // Temporary Wall 추가
+    Position pos(10, 10);
+    auto lifetime = std::chrono::milliseconds(3000);
+    game->getTemporaryWallManager().addTemporaryWall(pos, lifetime);
+    
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 1);
+    EXPECT_TRUE(game->getTemporaryWallManager().hasTemporaryWallAt(pos));
+}
+
+// Temporary Wall 충돌 테스트
+TEST_F(GameTest, TemporaryWallCollisionTest) {
+    // 뱀의 현재 위치 확인
+    Position headPos = game->getSnake().getHead();
+    Direction direction = game->getSnake().getDirection();
+    
+    // 뱀이 이동할 다음 위치에 Temporary Wall 배치
+    Position nextPos = headPos;
+    switch (direction) {
+        case Direction::RIGHT: nextPos.x += 1; break;
+        case Direction::LEFT: nextPos.x -= 1; break;
+        case Direction::UP: nextPos.y -= 1; break;
+        case Direction::DOWN: nextPos.y += 1; break;
+    }
+    
+    // Temporary Wall 추가
+    auto lifetime = std::chrono::milliseconds(5000);
+    game->getTemporaryWallManager().addTemporaryWall(nextPos, lifetime);
+    game->getTemporaryWallManager().updateMap();
+    
+    // 맵에 Temporary Wall이 반영되었는지 확인
+    EXPECT_EQ(game->getMap().getCellValue(nextPos.x, nextPos.y), 9);
+    
+    // 게임 업데이트 (뱀이 Temporary Wall과 충돌해야 함)
+    game->update();
+    
+    // 게임 오버 상태 확인
+    EXPECT_TRUE(game->isGameOver());
+}
+
+// Temporary Wall 만료 테스트
+TEST_F(GameTest, TemporaryWallExpirationIntegrationTest) {
+    // 자동 생성 타이머를 미래로 설정하여 자동 생성 방지
+    game->setLastTemporaryWallCreation(std::chrono::steady_clock::now());
+    
+    // 짧은 생존 시간의 Temporary Wall 추가
+    Position pos(15, 15);
+    auto shortLifetime = std::chrono::milliseconds(100);
+    game->getTemporaryWallManager().addTemporaryWall(pos, shortLifetime);
+    
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 1);
+    
+    // 150ms 대기 후 게임 업데이트
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    game->update();
+    
+    // Temporary Wall이 만료되어 제거되었는지 확인
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    EXPECT_FALSE(game->getTemporaryWallManager().hasTemporaryWallAt(pos));
+}
+
+// 스테이지 전환 시 Temporary Wall 초기화 테스트
+TEST_F(GameTest, TemporaryWallResetOnStageTransitionTest) {
+    // Temporary Wall 추가
+    Position pos1(8, 8);
+    Position pos2(12, 12);
+    auto lifetime = std::chrono::milliseconds(10000);  // 긴 생존 시간
+    
+    game->getTemporaryWallManager().addTemporaryWall(pos1, lifetime);
+    game->getTemporaryWallManager().addTemporaryWall(pos2, lifetime);
+    
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 2);
+    
+    // 첫 번째 스테이지 미션 완료
+    game->getStageManager().updateMissionProgress(MissionType::GROWTH_ITEMS, 1);
+    
+    // 게임 업데이트 (스테이지 전환 처리)
+    game->update();
+    
+    // 스테이지 전환 후 Temporary Wall이 초기화되었는지 확인
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    EXPECT_FALSE(game->getTemporaryWallManager().hasTemporaryWallAt(pos1));
+    EXPECT_FALSE(game->getTemporaryWallManager().hasTemporaryWallAt(pos2));
+}
+
+// 자동 Temporary Wall 생성 타이머 테스트
+TEST_F(GameTest, AutoTemporaryWallCreationTimerTest) {
+    // 초기 상태 확인
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    
+    // 타이머 설정 확인 (10초 간격)
+    EXPECT_EQ(game->getTemporaryWallCreationInterval(), 10000);
+    
+    // 마지막 생성 시간이 초기화되어 있는지 확인
+    auto now = std::chrono::steady_clock::now();
+    auto lastCreation = game->getLastTemporaryWallCreation();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCreation);
+    
+    // 게임 시작 시점에서는 충분한 시간이 지났다고 가정 (즉시 생성 가능)
+    EXPECT_GE(elapsed.count(), 10000);
+}
+
+// 자동 Temporary Wall 생성 기능 테스트
+TEST_F(GameTest, AutoTemporaryWallCreationTest) {
+    // 초기 상태 확인
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    
+    // 강제로 자동 생성 트리거
+    game->createRandomTemporaryWalls();
+    
+    // Temporary Wall이 생성되었는지 확인 (3개 생성 예상)
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 3);
+}
+
+// 자동 생성된 Temporary Wall 위치 검증 테스트
+TEST_F(GameTest, AutoTemporaryWallPositionValidationTest) {
+    Position snakeHead = game->getSnake().getHead();
+    
+    // 자동 생성 실행
+    game->createRandomTemporaryWalls();
+    
+    // 맵 업데이트 (Temporary Wall이 맵에 반영되도록)
+    game->getTemporaryWallManager().updateMap();
+    
+    // 생성된 모든 Temporary Wall이 뱀과 최소 거리를 유지하는지 확인
+    const auto& tempWalls = game->getTemporaryWallManager().getTemporaryWalls();
+    for (const auto& wall : tempWalls) {
+        Position wallPos = wall.getPosition();
+        
+        // 뱀 머리와의 거리 계산 (맨하탄 거리)
+        int distance = abs(wallPos.x - snakeHead.x) + abs(wallPos.y - snakeHead.y);
+        EXPECT_GE(distance, 3);  // 최소 3칸 이상 떨어져 있어야 함
+        
+        // 유효한 위치인지 확인
+        EXPECT_TRUE(game->getMap().isValidPosition(wallPos.x, wallPos.y));
+        
+        // 맵에 Temporary Wall이 반영되었는지 확인
+        EXPECT_EQ(game->getMap().getCellValue(wallPos.x, wallPos.y), 9);
+    }
+}
+
+// 주기적 자동 생성 통합 테스트
+TEST_F(GameTest, PeriodicAutoCreationIntegrationTest) {
+    // 초기 상태
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    
+    // 타이머를 과거로 설정하여 즉시 생성 조건 만족
+    game->setLastTemporaryWallCreation(
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(11000)
+    );
+    
+    // 게임 업데이트 (자동 생성 트리거)
+    game->update();
+    
+    // Temporary Wall이 자동 생성되었는지 확인
+    EXPECT_GT(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
+    
+    // 마지막 생성 시간이 업데이트되었는지 확인
+    auto now = std::chrono::steady_clock::now();
+    auto lastCreation = game->getLastTemporaryWallCreation();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCreation);
+    
+    // 방금 생성되었으므로 경과 시간이 짧아야 함
+    EXPECT_LT(elapsed.count(), 1000);  // 1초 미만
 } 

@@ -131,4 +131,34 @@ TEST_F(GameMapTest, SpeedItemDisplayTest) {
     EXPECT_EQ(map->getCellValue(6, 6), 6);
     EXPECT_EQ(map->getCellValue(7, 7), 7);
     EXPECT_EQ(map->getCellValue(8, 8), 8);
+}
+
+// Temporary Wall 표시 테스트
+TEST_F(GameMapTest, TemporaryWallDisplayTest) {
+    // Temporary Wall은 맵 값 9로 설정되어야 함
+    map->setCellValue(12, 12, 9);
+    EXPECT_EQ(map->getCellValue(12, 12), 9);
+    
+    // 다른 벽 타입들과 구분되는지 확인
+    map->setCellValue(10, 10, 1);   // Wall
+    map->setCellValue(11, 11, 2);   // Immune Wall
+    map->setCellValue(12, 12, 9);   // Temporary Wall
+    
+    EXPECT_EQ(map->getCellValue(10, 10), 1);
+    EXPECT_EQ(map->getCellValue(11, 11), 2);
+    EXPECT_EQ(map->getCellValue(12, 12), 9);
+}
+
+// Temporary Wall 설정 메서드 테스트
+TEST_F(GameMapTest, TemporaryWallSetterTest) {
+    // setTemporaryWall 메서드가 있어야 함
+    map->setTemporaryWall(15, 15);
+    EXPECT_EQ(map->getCellValue(15, 15), 9);
+    
+    // 여러 위치에 Temporary Wall 설정
+    map->setTemporaryWall(5, 10);
+    map->setTemporaryWall(20, 25);
+    
+    EXPECT_EQ(map->getCellValue(5, 10), 9);
+    EXPECT_EQ(map->getCellValue(20, 25), 9);
 } 

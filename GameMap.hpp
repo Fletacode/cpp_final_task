@@ -33,6 +33,7 @@ public:
     void setSnakeHead(int x, int y);
     void setSnakeBody(int x, int y);
     void setGate(int x, int y);
+    void setTemporaryWall(int x, int y);
 
     // 위치 유효성 검사
     bool isValidPosition(int x, int y) const;

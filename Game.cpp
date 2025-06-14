@@ -1,6 +1,9 @@
 #include "Game.hpp"
 #include <chrono>
 #include <thread>
+#include <algorithm>
+#include <random>
+#include <cstdlib>
 #include "Stage.hpp"
 
 // static 멤버 변수 정의
@@ -9,7 +12,9 @@ const int Game::minTickDuration;
 
 Game::Game(int width, int height) 
     : map(width, height), snake(width/2, height/2), itemManager(map), gateManager(map), 
-      gameOver(false), gameCompleted(false), currentTickDuration(baseTickDuration), speedBoostCount(0) {
+      temporaryWallManager(map), gameOver(false), gameCompleted(false), 
+      currentTickDuration(baseTickDuration), speedBoostCount(0),
+      temporaryWallCreationInterval(10000) {  // 10초 간격
     // ColorManager 초기화
     colorManager = std::make_shared<ColorManager>();
     map.setColorManager(colorManager);
@@ -19,6 +24,9 @@ Game::Game(int width, int height)
     
     // StageManager 초기화 및 첫 번째 스테이지 맵 적용
     stageManager.applyCurrentStageToMap(map);
+    
+    // 자동 생성 타이머 초기화 (게임 시작 시 즉시 생성 가능하도록)
+    lastTemporaryWallCreation = std::chrono::steady_clock::now() - temporaryWallCreationInterval;
 }
 
 Game::~Game() {
@@ -34,6 +42,12 @@ void Game::update() {
     // Gate 관리
     gateManager.removeExpiredGates();
     gateManager.generateGates(snake);
+    
+    // Temporary Wall 관리
+    temporaryWallManager.update();
+    
+    // 자동 Temporary Wall 생성 체크
+    checkTemporaryWallCreation();
     
     // Gate 충돌 처리 (벽 충돌 감지 이전에 처리)
     handleGateCollision();
@@ -78,6 +92,11 @@ void Game::handleInput(int key) {
         case 'q':
         case 'Q':
             gameOver = true;
+            break;
+        case 't':
+        case 'T':
+            // Temporary Wall 생성 (뱀 머리 주변에)
+            createTemporaryWallAroundSnake();
             break;
     }
 }
@@ -158,14 +177,14 @@ bool Game::checkWallCollision() const {
     
     // 벽과의 충돌 확인 (게이트는 제외)
     int cellValue = map.getCellValue(headX, headY);
-    return cellValue == 1 || cellValue == 2;  // Wall 또는 Immune Wall만 충돌
+    return cellValue == 1 || cellValue == 2 || cellValue == 9;  // Wall, Immune Wall, Temporary Wall 충돌
 }
 
 void Game::updateMap() {
-    // 맵 초기화 (벽 제외하고 모든 셀을 0으로)
+    // 맵 초기화 (벽과 Temporary Wall 제외하고 모든 셀을 0으로)
     for (int y = 1; y < map.getHeight() - 1; y++) {
         for (int x = 1; x < map.getWidth() - 1; x++) {
-            if (map.getCellValue(x, y) != 1 && map.getCellValue(x, y) != 2) {
+            if (map.getCellValue(x, y) != 1 && map.getCellValue(x, y) != 2 && map.getCellValue(x, y) != 9) {
                 map.setCellValue(x, y, 0);
             }
         }
@@ -176,6 +195,9 @@ void Game::updateMap() {
     
     // Gate 위치 업데이트
     gateManager.updateMap();
+    
+    // Temporary Wall 위치 업데이트
+    temporaryWallManager.updateMap();
     
     // Snake 위치 업데이트
     const auto& body = snake.getBody();
@@ -296,6 +318,9 @@ void Game::checkStageCompletion() {
             // 스테이지별 카운터 초기화 (Growth Items, Gates 사용 횟수)
             scoreManager.resetStageSpecificCounters();
             
+            // Temporary Wall 초기화
+            temporaryWallManager.clear();
+            
             // 뱀을 안전한 위치로 초기화
             auto safePos = map.findSafePosition();
             if (safePos.has_value()) {
@@ -354,4 +379,93 @@ void Game::applySpeedBoost() {
 void Game::resetSpeed() {
     currentTickDuration = baseTickDuration;
     speedBoostCount = 0;
+}
+
+void Game::createTemporaryWallAroundSnake() {
+    Position headPos = snake.getHead();
+    auto lifetime = std::chrono::milliseconds(5000);  // 5초 생존
+    
+    // 뱀 머리 주변 8방향에 Temporary Wall 생성
+    std::vector<Position> positions = {
+        {headPos.x - 1, headPos.y - 1}, // 좌상
+        {headPos.x, headPos.y - 1},     // 상
+        {headPos.x + 1, headPos.y - 1}, // 우상
+        {headPos.x - 1, headPos.y},     // 좌
+        {headPos.x + 1, headPos.y},     // 우
+        {headPos.x - 1, headPos.y + 1}, // 좌하
+        {headPos.x, headPos.y + 1},     // 하
+        {headPos.x + 1, headPos.y + 1}  // 우하
+    };
+    
+    for (const auto& pos : positions) {
+        // 유효한 위치이고 빈 공간인 경우에만 Temporary Wall 생성
+        if (map.isValidPosition(pos.x, pos.y) && map.getCellValue(pos.x, pos.y) == 0) {
+            temporaryWallManager.addTemporaryWall(pos, lifetime);
+        }
+    }
+}
+
+void Game::checkTemporaryWallCreation() {
+    auto now = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTemporaryWallCreation);
+    
+    // 설정된 간격이 지났으면 자동 생성
+    if (elapsed >= temporaryWallCreationInterval) {
+        createRandomTemporaryWalls();
+        lastTemporaryWallCreation = now;
+    }
+}
+
+void Game::createRandomTemporaryWalls() {
+    Position snakeHead = snake.getHead();
+    auto lifetime = std::chrono::milliseconds(5000);  // 5초 생존
+    const int wallsToCreate = 3;  // 한 번에 3개 생성
+    const int minDistance = 3;    // 뱀과의 최소 거리
+    
+    std::vector<Position> validPositions;
+    
+    // 맵에서 유효한 위치들 수집
+    for (int y = 1; y < map.getHeight() - 1; y++) {
+        for (int x = 1; x < map.getWidth() - 1; x++) {
+            // 빈 공간인지 확인
+            if (map.getCellValue(x, y) == 0) {
+                Position pos(x, y);
+                
+                // 뱀과의 거리 확인 (맨하탄 거리)
+                int distance = abs(pos.x - snakeHead.x) + abs(pos.y - snakeHead.y);
+                if (distance >= minDistance) {
+                    // 뱀의 몸통과도 충돌하지 않는지 확인
+                    bool tooCloseToSnake = false;
+                    const auto& snakeBody = snake.getBody();
+                    for (const auto& bodyPart : snakeBody) {
+                        int bodyDistance = abs(pos.x - bodyPart.x) + abs(pos.y - bodyPart.y);
+                        if (bodyDistance < minDistance) {
+                            tooCloseToSnake = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!tooCloseToSnake) {
+                        validPositions.push_back(pos);
+                    }
+                }
+            }
+        }
+    }
+    
+    // 랜덤하게 위치 선택해서 Temporary Wall 생성
+    if (!validPositions.empty()) {
+        // C++17에서는 std::shuffle 사용
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(validPositions.begin(), validPositions.end(), g);
+        
+        int wallsCreated = 0;
+        for (const auto& pos : validPositions) {
+            if (wallsCreated >= wallsToCreate) break;
+            
+            temporaryWallManager.addTemporaryWall(pos, lifetime);
+            wallsCreated++;
+        }
+    }
 } 
