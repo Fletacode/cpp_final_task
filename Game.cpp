@@ -1,6 +1,7 @@
 #include "Game.hpp"
 #include <chrono>
 #include <thread>
+#include "Stage.hpp"
 
 Game::Game(int width, int height) 
     : map(width, height), snake(width/2, height/2), itemManager(map), gateManager(map), gameOver(false), gameCompleted(false) {
@@ -97,7 +98,7 @@ void Game::run() {
     updateMap();
     
     auto lastUpdate = std::chrono::steady_clock::now();
-    const auto tickDuration = std::chrono::milliseconds(200);  // 200ms마다 업데이트
+    const auto tickDuration = std::chrono::milliseconds(200 - (stageManager.getCurrentStage()->getStageNumber() * 75));  // 200ms마다 업데이트
     
     while (!gameOver) {
         auto now = std::chrono::steady_clock::now();
