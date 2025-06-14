@@ -2,6 +2,7 @@
 #define SCOREMANAGER_HPP
 
 #include <string>
+#include <chrono>
 
 class ScoreManager {
 private:
@@ -10,6 +11,7 @@ private:
     int growthItemsCollected;
     int poisonItemsCollected;
     int gatesUsed;
+    std::chrono::steady_clock::time_point gameStartTime;
 
 public:
     // 생성자
@@ -27,6 +29,12 @@ public:
     int getGrowthItemsCollected() const;
     int getPoisonItemsCollected() const;
     int getGatesUsed() const;
+
+    // 생존시간 관련
+    void setGameStartTime();
+    void setGameStartTime(const std::chrono::steady_clock::time_point& startTime);
+    int getSurvivalTimeSeconds() const;
+    std::string getFormattedSurvivalTime() const;
 
     // 점수 계산
     int calculateScore() const;

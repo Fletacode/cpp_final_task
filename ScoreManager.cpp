@@ -2,10 +2,12 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <iomanip>
 
 ScoreManager::ScoreManager() 
     : currentLength(3), maxLength(3), growthItemsCollected(0), 
       poisonItemsCollected(0), gatesUsed(0) {
+    gameStartTime = std::chrono::steady_clock::now();
 }
 
 void ScoreManager::updateSnakeLength(int length) {
@@ -45,6 +47,32 @@ int ScoreManager::getGatesUsed() const {
     return gatesUsed;
 }
 
+// 생존시간 관련 메서드들
+void ScoreManager::setGameStartTime() {
+    gameStartTime = std::chrono::steady_clock::now();
+}
+
+void ScoreManager::setGameStartTime(const std::chrono::steady_clock::time_point& startTime) {
+    gameStartTime = startTime;
+}
+
+int ScoreManager::getSurvivalTimeSeconds() const {
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(now - gameStartTime);
+    return static_cast<int>(duration.count());
+}
+
+std::string ScoreManager::getFormattedSurvivalTime() const {
+    int totalSeconds = getSurvivalTimeSeconds();
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+    
+    std::ostringstream oss;
+    oss << std::setfill('0') << std::setw(2) << minutes << ":"
+        << std::setfill('0') << std::setw(2) << seconds;
+    return oss.str();
+}
+
 int ScoreManager::calculateScore() const {
     int score = 0;
     
@@ -76,6 +104,12 @@ void ScoreManager::saveToFile(const std::string& filename) const {
         file << "poison_items=" << poisonItemsCollected << "\n";
         file << "gates_used=" << gatesUsed << "\n";
         file << "total_score=" << calculateScore() << "\n";
+        
+        // 게임 시작 시간을 epoch 이후 밀리초로 저장
+        auto epoch = gameStartTime.time_since_epoch();
+        auto millis = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
+        file << "game_start_time=" << millis.count() << "\n";
+        
         file.close();
     }
 }
@@ -102,6 +136,11 @@ void ScoreManager::loadFromFile(const std::string& filename) {
                 poisonItemsCollected = std::stoi(value);
             } else if (key == "gates_used") {
                 gatesUsed = std::stoi(value);
+            } else if (key == "game_start_time") {
+                // epoch 이후 밀리초에서 time_point로 복원
+                long long millis = std::stoll(value);
+                auto duration = std::chrono::milliseconds(millis);
+                gameStartTime = std::chrono::steady_clock::time_point(duration);
             }
         }
     }
@@ -114,6 +153,7 @@ void ScoreManager::reset() {
     growthItemsCollected = 0;
     poisonItemsCollected = 0;
     gatesUsed = 0;
+    gameStartTime = std::chrono::steady_clock::now();  // 시작 시간도 리셋
 }
 
 void ScoreManager::resetStageSpecificCounters() {

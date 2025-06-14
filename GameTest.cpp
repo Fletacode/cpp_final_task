@@ -554,4 +554,77 @@ TEST_F(GameTest, PeriodicAutoCreationIntegrationTest) {
     
     // 방금 생성되었으므로 경과 시간이 짧아야 함
     EXPECT_LT(elapsed.count(), 1000);  // 1초 미만
+}
+
+// 맵에 T가 실제로 표시되는지 확인하는 테스트
+TEST_F(GameTest, TemporaryWallMapDisplayTest) {
+    // 자동 생성 타이머를 과거로 설정
+    game->setLastTemporaryWallCreation(
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(11000)
+    );
+    
+    // 게임 업데이트 (자동 생성 + 맵 업데이트)
+    game->update();
+    
+    // Temporary Wall이 생성되었는지 확인
+    int tempWallCount = game->getTemporaryWallManager().getTemporaryWallCount();
+    EXPECT_GT(tempWallCount, 0);
+    
+    // 맵에서 값 9(Temporary Wall)를 가진 셀이 있는지 확인
+    int foundTempWalls = 0;
+    for (int y = 1; y < game->getMap().getHeight() - 1; y++) {
+        for (int x = 1; x < game->getMap().getWidth() - 1; x++) {
+            if (game->getMap().getCellValue(x, y) == 9) {
+                foundTempWalls++;
+            }
+        }
+    }
+    
+    // 생성된 Temporary Wall 개수와 맵에 표시된 개수가 일치해야 함
+    EXPECT_EQ(foundTempWalls, tempWallCount);
+    EXPECT_GT(foundTempWalls, 0);
+}
+
+// 생존시간 초기화 테스트
+TEST_F(GameTest, SurvivalTimeInitializationTest) {
+    // 게임 생성 직후 생존시간은 0초여야 함
+    EXPECT_EQ(game->getScoreManager().getSurvivalTimeSeconds(), 0);
+    
+    // 포맷된 시간도 00:00이어야 함
+    EXPECT_EQ(game->getScoreManager().getFormattedSurvivalTime(), "00:00");
+}
+
+// 생존시간 진행 테스트
+TEST_F(GameTest, SurvivalTimeProgressTest) {
+    // 게임 시작 시간을 과거로 설정 (3초 전)
+    auto pastTime = std::chrono::steady_clock::now() - std::chrono::seconds(3);
+    game->getScoreManager().setGameStartTime(pastTime);
+    
+    // 생존시간이 3초 정도여야 함 (약간의 오차 허용)
+    int survivalTime = game->getScoreManager().getSurvivalTimeSeconds();
+    EXPECT_GE(survivalTime, 2);  // 최소 2초
+    EXPECT_LE(survivalTime, 4);  // 최대 4초 (오차 고려)
+    
+    // 포맷된 시간 확인
+    std::string formatted = game->getScoreManager().getFormattedSurvivalTime();
+    EXPECT_TRUE(formatted.find("00:0") == 0);  // 00:0X 형식이어야 함
+}
+
+// 스테이지 전환 시 생존시간 유지 테스트
+TEST_F(GameTest, SurvivalTimeStageTransitionTest) {
+    // 게임 시작 시간을 과거로 설정
+    auto pastTime = std::chrono::steady_clock::now() - std::chrono::seconds(5);
+    game->getScoreManager().setGameStartTime(pastTime);
+    
+    // 초기 생존시간 확인
+    int initialSurvivalTime = game->getScoreManager().getSurvivalTimeSeconds();
+    EXPECT_GT(initialSurvivalTime, 0);
+    
+    // 스테이지별 카운터 리셋 (생존시간은 유지되어야 함)
+    game->getScoreManager().resetStageSpecificCounters();
+    
+    // 생존시간이 유지되는지 확인 (약간의 시간 경과 허용)
+    int afterResetSurvivalTime = game->getScoreManager().getSurvivalTimeSeconds();
+    EXPECT_GE(afterResetSurvivalTime, initialSurvivalTime);
+    EXPECT_LE(afterResetSurvivalTime, initialSurvivalTime + 2);  // 최대 2초 차이 허용
 } 

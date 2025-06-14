@@ -2,6 +2,8 @@
 #include "ScoreManager.hpp"
 #include <fstream>
 #include <filesystem>
+#include <chrono>
+#include <thread>
 
 class ScoreManagerTest : public ::testing::Test {
 protected:
@@ -188,4 +190,78 @@ TEST_F(ScoreManagerTest, LoadNonExistentFileTest) {
     EXPECT_EQ(scoreManager->getGrowthItemsCollected(), 0);
     EXPECT_EQ(scoreManager->getPoisonItemsCollected(), 0);
     EXPECT_EQ(scoreManager->getGatesUsed(), 0);
+}
+
+// 생존시간 설정 테스트
+TEST_F(ScoreManagerTest, SurvivalTimeSetupTest) {
+    // 게임 시작 시간 설정
+    scoreManager->setGameStartTime();
+    
+    // 초기 생존시간은 0초여야 함
+    EXPECT_EQ(scoreManager->getSurvivalTimeSeconds(), 0);
+    
+    // 포맷된 시간도 00:00이어야 함
+    EXPECT_EQ(scoreManager->getFormattedSurvivalTime(), "00:00");
+}
+
+// 생존시간 계산 테스트
+TEST_F(ScoreManagerTest, SurvivalTimeCalculationTest) {
+    // 게임 시작 시간을 과거로 설정 (2초 전)
+    auto pastTime = std::chrono::steady_clock::now() - std::chrono::seconds(2);
+    scoreManager->setGameStartTime(pastTime);
+    
+    // 생존시간이 2초 정도여야 함 (약간의 오차 허용)
+    int survivalTime = scoreManager->getSurvivalTimeSeconds();
+    EXPECT_GE(survivalTime, 1);  // 최소 1초
+    EXPECT_LE(survivalTime, 3);  // 최대 3초 (오차 고려)
+}
+
+// 생존시간 포맷팅 테스트
+TEST_F(ScoreManagerTest, SurvivalTimeFormattingTest) {
+    // 65초 전으로 설정 (1분 5초)
+    auto pastTime = std::chrono::steady_clock::now() - std::chrono::seconds(65);
+    scoreManager->setGameStartTime(pastTime);
+    
+    std::string formatted = scoreManager->getFormattedSurvivalTime();
+    
+    // 01:05 형식이어야 함 (약간의 오차 허용)
+    EXPECT_TRUE(formatted.find("01:0") == 0);  // 1분대여야 함
+}
+
+// 생존시간 리셋 테스트
+TEST_F(ScoreManagerTest, SurvivalTimeResetTest) {
+    // 시작 시간 설정 후 잠시 대기 (1초로 증가)
+    scoreManager->setGameStartTime();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+    
+    // 생존시간이 0보다 커야 함
+    EXPECT_GT(scoreManager->getSurvivalTimeSeconds(), 0);
+    
+    // 리셋 후 다시 시작
+    scoreManager->reset();
+    
+    // 리셋 후 생존시간은 다시 0이어야 함 (reset에서 자동으로 시작시간 설정됨)
+    EXPECT_EQ(scoreManager->getSurvivalTimeSeconds(), 0);
+}
+
+// 생존시간 파일 저장/로드 테스트
+TEST_F(ScoreManagerTest, SurvivalTimeFileIOTest) {
+    // 시작 시간을 과거로 설정
+    auto pastTime = std::chrono::steady_clock::now() - std::chrono::seconds(30);
+    scoreManager->setGameStartTime(pastTime);
+    
+    // 파일 저장
+    scoreManager->saveToFile(testFilename);
+    
+    // 새로운 ScoreManager로 로드
+    auto newScoreManager = std::make_unique<ScoreManager>();
+    newScoreManager->loadFromFile(testFilename);
+    
+    // 생존시간이 복원되어야 함 (약간의 오차 허용)
+    int originalTime = scoreManager->getSurvivalTimeSeconds();
+    int loadedTime = newScoreManager->getSurvivalTimeSeconds();
+    
+    // 로드된 시간이 원래 시간과 비슷해야 함 (±2초 오차 허용)
+    EXPECT_GE(loadedTime, originalTime - 2);
+    EXPECT_LE(loadedTime, originalTime + 2);
 } 

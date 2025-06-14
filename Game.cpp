@@ -21,6 +21,7 @@ Game::Game(int width, int height)
     
     // ScoreManager 초기화
     scoreManager.updateSnakeLength(snake.getLength());
+    scoreManager.setGameStartTime();  // 게임 시작 시간 설정
     
     // StageManager 초기화 및 첫 번째 스테이지 맵 적용
     stageManager.applyCurrentStageToMap(map);
@@ -297,8 +298,11 @@ void Game::drawScoreBoard() {
     // Gates 사용 수
     mvprintw(7, 35, "G: %d", scoreManager.getGatesUsed());
     
+    // 생존시간
+    mvprintw(8, 35, "Time: %s", scoreManager.getFormattedSurvivalTime().c_str());
+    
     // 총 점수
-    mvprintw(9, 35, "Score: %d", scoreManager.getTotalScore());
+    mvprintw(10, 35, "Score: %d", scoreManager.getTotalScore());
     
     // 화면 갱신
     refresh();
