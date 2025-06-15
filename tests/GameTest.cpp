@@ -480,8 +480,8 @@ TEST_F(GameTest, AutoTemporaryWallCreationTimerTest) {
     // 초기 상태 확인
     EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 0);
     
-    // 타이머 설정 확인 (10초 간격)
-    EXPECT_EQ(game->getTemporaryWallCreationInterval(), 10000);
+    // 타이머 설정 확인 (20초 간격)
+    EXPECT_EQ(game->getTemporaryWallCreationInterval(), 20000);
     
     // 마지막 생성 시간이 초기화되어 있는지 확인
     auto now = std::chrono::steady_clock::now();
@@ -489,7 +489,7 @@ TEST_F(GameTest, AutoTemporaryWallCreationTimerTest) {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastCreation);
     
     // 게임 시작 시점에서는 충분한 시간이 지났다고 가정 (즉시 생성 가능)
-    EXPECT_GE(elapsed.count(), 10000);
+    EXPECT_GE(elapsed.count(), 20000);
 }
 
 // 자동 Temporary Wall 생성 기능 테스트
@@ -500,8 +500,8 @@ TEST_F(GameTest, AutoTemporaryWallCreationTest) {
     // 강제로 자동 생성 트리거
     game->createRandomTemporaryWalls();
     
-    // Temporary Wall이 생성되었는지 확인 (3개 생성 예상)
-    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 3);
+    // Temporary Wall이 생성되었는지 확인 (2개 생성 예상)
+    EXPECT_EQ(game->getTemporaryWallManager().getTemporaryWallCount(), 2);
 }
 
 // 자동 생성된 Temporary Wall 위치 검증 테스트
@@ -538,7 +538,7 @@ TEST_F(GameTest, PeriodicAutoCreationIntegrationTest) {
     
     // 타이머를 과거로 설정하여 즉시 생성 조건 만족
     game->setLastTemporaryWallCreation(
-        std::chrono::steady_clock::now() - std::chrono::milliseconds(11000)
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(21000)
     );
     
     // 게임 업데이트 (자동 생성 트리거)
@@ -560,7 +560,7 @@ TEST_F(GameTest, PeriodicAutoCreationIntegrationTest) {
 TEST_F(GameTest, TemporaryWallMapDisplayTest) {
     // 자동 생성 타이머를 과거로 설정
     game->setLastTemporaryWallCreation(
-        std::chrono::steady_clock::now() - std::chrono::milliseconds(11000)
+        std::chrono::steady_clock::now() - std::chrono::milliseconds(21000)
     );
     
     // 게임 업데이트 (자동 생성 + 맵 업데이트)

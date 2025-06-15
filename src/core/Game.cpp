@@ -14,7 +14,7 @@ Game::Game(int width, int height)
     : map(width, height), snake(width/2, height/2), itemManager(map), gateManager(map), 
       temporaryWallManager(map), gameOver(false), gameCompleted(false), 
       currentTickDuration(baseTickDuration), speedBoostCount(0),
-      temporaryWallCreationInterval(10000) {  // 10초 간격
+      temporaryWallCreationInterval(20000) {  // 20초 간격
     // ColorManager 초기화
     colorManager = std::make_shared<ColorManager>();
     map.setColorManager(colorManager);
@@ -423,7 +423,7 @@ void Game::checkTemporaryWallCreation() {
 void Game::createRandomTemporaryWalls() {
     Position snakeHead = snake.getHead();
     auto lifetime = std::chrono::milliseconds(5000);  // 5초 생존
-    const int wallsToCreate = 3;  // 한 번에 3개 생성
+    const int wallsToCreate = 2;  // 한 번에 2개 생성
     const int minDistance = 3;    // 뱀과의 최소 거리
     
     std::vector<Position> validPositions;
